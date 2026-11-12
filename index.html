@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Property Tax Delinquency Dashboard — TaxAce</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#EEF2F7;--surface:#FFFFFF;
+      --sidebar-bg:#162C4A;--sidebar-text:rgba(255,255,255,.6);
+      --sidebar-text-active:#fff;--sidebar-active-bg:rgba(255,255,255,.12);
+      --sidebar-hover-bg:rgba(255,255,255,.07);
+      --text-primary:#1A2B3C;--text-secondary:#5C6E82;--text-muted:#8A9AAA;
+      --border:#DDE5EE;
+      --shadow-sm:0 1px 3px rgba(22,44,74,.08);
+      --shadow-md:0 10px 32px rgba(22,44,74,.18);
+      --flag:#E07B10;--flag-bg:#FEF3E5;
+      --critical:#C0392B;--critical-bg:#FDEDEC;
+      --warning:#B8860B;--warning-bg:#FDF5E0;
+      --info:#2471A3;--info-bg:#EBF5FB;
+      --success:#1A7A58;--success-bg:#E8F8F2;
+      --neutral:#5C6E82;--neutral-bg:#EEF2F7;
+    }
+    @media(prefers-color-scheme:dark){
+      :root:not([data-theme="light"]){
+        --bg:#0F1D2E;--surface:#1A3050;
+        --sidebar-bg:#0A1520;--sidebar-text:rgba(255,255,255,.5);
+        --text-primary:#D8E5F3;--text-secondary:#7A9AB8;--text-muted:#4A6580;
+        --border:#1E3550;--shadow-md:0 10px 32px rgba(0,0,0,.45);
+        --flag-bg:#2D1E08;--critical-bg:#2D0D0A;--warning-bg:#2D2308;
+        --info-bg:#0A1D2E;--success-bg:#0A2018;--neutral-bg:#162030;
+      }
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;}
+    body{font-family:'DM Sans',system-ui,sans-serif;font-size:14px;line-height:1.5;
+      color:var(--text-primary);background:var(--bg);}
+
+    /* ── FULL-PAGE SCREENS ── */
+    .screen{display:none;min-height:100vh;}
+    .screen.active{display:flex;}
+
+    /* LOGIN SCREEN */
+    #loginScreen{background:#162C4A;align-items:center;justify-content:center;padding:24px;}
+    .login-card{background:#fff;border-radius:14px;width:100%;max-width:400px;
+      padding:36px 36px 32px;box-shadow:0 24px 64px rgba(0,0,0,.35);}
+    .login-brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+    .login-pip{width:10px;height:20px;background:#E07B10;border-radius:2px;flex-shrink:0;}
+    .login-brand-name{font-size:20px;font-weight:700;color:#1A2B3C;letter-spacing:-.3px;}
+    .login-subtitle{font-size:13px;color:#5C6E82;margin-bottom:24px;padding-left:20px;}
+    .login-badge{display:inline-flex;align-items:center;gap:5px;background:#FEF3E5;
+      color:#E07B10;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;
+      margin-bottom:22px;border:1px solid rgba(224,123,16,.25);}
+    .login-field{margin-bottom:14px;}
+    .login-label{font-size:12px;font-weight:600;color:#5C6E82;margin-bottom:5px;display:block;}
+    .login-input{width:100%;padding:10px 13px;border:1px solid #DDE5EE;border-radius:7px;
+      font-family:inherit;font-size:14px;color:#1A2B3C;background:#F8FAFC;outline:none;
+      transition:border-color .15s,box-shadow .15s;}
+    .login-input:focus{border-color:#E07B10;box-shadow:0 0 0 3px rgba(224,123,16,.12);background:#fff;}
+    .pw-wrap{position:relative;}
+    .pw-toggle{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;color:#8A9AAA;padding:4px;
+      display:flex;align-items:center;}
+    .pw-toggle:hover{color:#5C6E82;}
+    .login-btn{width:100%;padding:11px;background:#E07B10;color:#fff;border:none;
+      border-radius:7px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;
+      margin-top:6px;transition:background .15s;}
+    .login-btn:hover{background:#C96F0E;}
+    .login-btn:active{opacity:.88;}
+    .login-btn:disabled{opacity:.55;cursor:not-allowed;}
+    .login-error{font-size:12px;color:#C0392B;margin-top:9px;text-align:center;
+      min-height:18px;font-weight:500;}
+    .login-footer{text-align:center;margin-top:20px;font-size:11px;color:#8A9AAA;
+      border-top:1px solid #EEF2F7;padding-top:14px;}
+
+    /* LOADING SCREEN */
+    #loadingScreen{background:var(--bg);align-items:center;justify-content:center;
+      flex-direction:column;gap:16px;}
+    .spinner{width:40px;height:40px;border:3px solid var(--border);
+      border-top-color:#E07B10;border-radius:50%;
+      animation:spin .8s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-text{font-size:14px;color:var(--text-muted);font-weight:500;}
+
+    /* ERROR SCREEN */
+    #errorScreen{background:var(--bg);align-items:center;justify-content:center;
+      flex-direction:column;gap:12px;padding:40px;}
+    .error-icon{font-size:36px;}
+    .error-title{font-size:16px;font-weight:600;}
+    .error-msg{font-size:13px;color:var(--text-secondary);max-width:420px;
+      text-align:center;line-height:1.6;}
+    .error-actions{display:flex;gap:10px;margin-top:8px;}
+
+    /* MAIN APP */
+    #mainApp{height:100vh;overflow:hidden;flex-direction:row;}
+
+    /* SIDEBAR */
+    .sidebar{width:224px;flex-shrink:0;background:var(--sidebar-bg);display:flex;
+      flex-direction:column;padding-top:env(safe-area-inset-top,0px);
+      padding-bottom:env(safe-area-inset-bottom,0px);overflow-y:auto;}
+    .sidebar-brand{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
+    .brand-row{display:flex;align-items:center;gap:8px;}
+    .brand-pip{width:8px;height:16px;background:#E07B10;border-radius:1px;}
+    .brand-name{font-size:14px;font-weight:700;color:#fff;}
+    .brand-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:3px;}
+    .sync-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;
+      font-size:10px;color:rgba(255,255,255,.35);}
+    .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--success);}
+    .nav-section{padding:12px 0 4px;}
+    .nav-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.28);padding:0 18px 6px;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:13px;
+      font-weight:500;color:var(--sidebar-text);cursor:pointer;
+      border-left:3px solid transparent;transition:background .12s,color .12s;}
+    .nav-item:hover{background:var(--sidebar-hover-bg);color:rgba(255,255,255,.85);}
+    .nav-item.active{background:var(--sidebar-active-bg);color:var(--sidebar-text-active);
+      border-left-color:#E07B10;}
+    .nav-item svg{flex-shrink:0;opacity:.65;}
+    .nav-item.active svg{opacity:1;}
+    .nav-badge{margin-left:auto;color:#fff;font-size:10px;font-weight:700;
+      padding:1px 6px;border-radius:10px;background:#C0392B;}
+    .sidebar-staff{padding:12px 18px 0;}
+    .staff-lbl{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);
+      margin-bottom:5px;display:block;}
+    .staff-input{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+      border-radius:5px;padding:6px 9px;color:rgba(255,255,255,.85);font-size:12px;
+      font-family:inherit;outline:none;}
+    .staff-input::placeholder{color:rgba(255,255,255,.3);}
+    .staff-input:focus{border-color:rgba(224,123,16,.6);}
+    .sidebar-footer{margin-top:auto;padding:12px 18px 16px;font-size:11px;
+      line-height:1.7;color:rgba(255,255,255,.25);}
+
+    /* MAIN */
+    .main{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);
+      padding:11px 24px;display:flex;align-items:center;gap:10px;
+      position:sticky;top:0;z-index:10;flex-wrap:wrap;}
+    .topbar-left{flex:1;min-width:0;}
+    .topbar-left h1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px;
+      white-space:nowrap;}
+    .topbar-left p{font-size:11px;color:var(--text-muted);margin-top:1px;}
+    .sync-indicator{font-size:11px;color:var(--success);font-weight:500;
+      display:inline-flex;align-items:center;gap:4px;opacity:0;transition:opacity .5s;}
+    .sync-indicator.show{opacity:1;}
+    .syncing{color:var(--flag);}
+    .topbar-actions{display:flex;gap:7px;flex-wrap:wrap;}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;gap:5px;border-radius:6px;
+      font-family:inherit;font-weight:600;cursor:pointer;border:none;
+      transition:background .12s,opacity .1s;white-space:nowrap;line-height:1.2;}
+    .btn:active{opacity:.82;}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    .btn-md{padding:8px 16px;font-size:13px;}
+    .btn-sm{padding:6px 13px;font-size:12px;}
+    .btn-xs{padding:4px 9px;font-size:11px;font-weight:700;}
+    .btn-icon{padding:5px 8px;font-size:11px;}
+    .btn-primary{background:#E07B10;color:#fff;}
+    .btn-primary:hover:not(:disabled){background:#C96F0E;}
+    .btn-paid{background:#1A7A58;color:#fff;}
+    .btn-paid:hover:not(:disabled){background:#156649;}
+    .btn-remind{background:#2471A3;color:#fff;}
+    .btn-remind:hover:not(:disabled){background:#1A5E8A;}
+    .btn-edit{background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);}
+    .btn-edit:hover{background:var(--bg);}
+    .btn-notes{background:transparent;color:var(--text-muted);border:1px solid transparent;}
+    .btn-notes:hover{background:var(--bg);color:var(--text-primary);}
+    .btn-outline{background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);}
+    .btn-outline:hover{background:var(--bg);}
+    .btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid transparent;}
+    .btn-ghost:hover{background:var(--bg);}
+    .btn-danger{background:#C0392B;color:#fff;}
+    .btn-danger:hover{background:#A93226;}
+    .btn-success{background:#1A7A58;color:#fff;}
+    .btn-success:hover{background:#156649;}
+    .divider-v{width:1px;height:24px;background:var(--border);flex-shrink:0;}
+
+    /* PANELS */
+    .panels{padding:22px 26px;flex:1;}
+    .panel{display:none;}
+    .panel.active{display:block;}
+
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+      padding:14px 16px;position:relative;overflow:hidden;}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+    .card-flag::before{background:#E07B10;}
+    .card-critical::before{background:#C0392B;}
+    .card-warning::before{background:#B8860B;}
+    .card-info::before{background:#2471A3;}
+    .stat-label{font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:7px;}
+    .stat-value{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1;}
+    .stat-sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
+
+    /* CARD */
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+    .card-title{font-size:13px;font-weight:600;margin-bottom:12px;}
+
+    /* SHARE CARD */
+    .share-card{background:var(--info-bg);border:1px solid rgba(36,113,163,.25);border-radius:8px;
+      padding:16px 18px;margin-bottom:18px;}
+    .share-card h3{font-size:13px;font-weight:600;color:var(--info);margin-bottom:10px;
+      display:flex;align-items:center;gap:7px;}
+    .share-steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .share-step{display:flex;gap:9px;align-items:flex-start;}
+    .share-num{width:20px;height:20px;border-radius:50%;background:var(--info);color:#fff;
+      font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .share-text{font-size:12px;color:var(--info);line-height:1.5;}
+
+    /* STATUS ROWS */
+    .status-row{display:flex;align-items:center;gap:10px;padding:7px 0;
+      border-bottom:1px solid var(--border);}
+    .status-row:last-child{border-bottom:none;}
+    .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .status-row-label{flex:1;font-size:13px;}
+    .status-row-count{font-size:13px;font-weight:600;}
+
+    /* BADGES */
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;
+      font-size:11px;font-weight:600;}
+    .badge-escalated{background:var(--critical-bg);color:var(--critical);}
+    .badge-2nd{background:var(--warning-bg);color:var(--warning);}
+    .badge-reminder{background:var(--info-bg);color:var(--info);}
+    .badge-new{background:var(--flag-bg);color:var(--flag);}
+    .badge-resolved{background:var(--success-bg);color:var(--success);}
+
+    /* TABLE */
+    .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+    .table-toolbar{padding:11px 14px;border-bottom:1px solid var(--border);
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+    .search-input{flex:1;min-width:150px;max-width:220px;padding:6px 11px;
+      border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;
+      color:var(--text-primary);background:var(--bg);outline:none;}
+    .search-input:focus{border-color:#E07B10;}
+    .select-filter{padding:6px 9px;border:1px solid var(--border);border-radius:6px;
+      font-family:inherit;font-size:13px;color:var(--text-primary);background:var(--bg);
+      outline:none;cursor:pointer;}
+    .row-count{font-size:12px;color:var(--text-muted);}
+    table{width:100%;border-collapse:collapse;}
+    thead th{padding:9px 11px;text-align:left;font-size:11px;font-weight:600;
+      color:var(--text-muted);background:var(--bg);border-bottom:1px solid var(--border);
+      white-space:nowrap;}
+    tbody tr{border-bottom:1px solid var(--border);border-left:3px solid transparent;
+      transition:background .1s;}
+    tbody tr:last-child{border-bottom:none;}
+    tbody tr:hover{background:var(--bg);}
+    tbody tr.row-escalated{border-left-color:#C0392B;}
+    tbody tr.row-2nd{border-left-color:#B8860B;}
+    tbody tr.row-reminder{border-left-color:#2471A3;}
+    tbody tr.row-new{border-left-color:#E07B10;}
+    @keyframes rowOut{to{opacity:0;transform:translateX(-18px);}}
+    tr.removing{animation:rowOut .28s forwards;pointer-events:none;}
+    td{padding:9px 11px;font-size:13px;vertical-align:middle;}
+    .client-name{font-weight:600;}
+    .client-id{font-size:11px;color:var(--text-muted);margin-top:1px;}
+    .prop-addr{font-size:12px;color:var(--text-secondary);}
+    .amount{font-weight:600;}
+    .days-over{color:var(--critical);font-weight:600;}
+    .days-over.mod{color:var(--warning);}
+    .td-actions{display:flex;gap:4px;align-items:center;}
+    .notes-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+      background:#2471A3;margin-left:4px;vertical-align:middle;}
+
+    /* EMPTY STATE */
+    .empty-state{text-align:center;padding:56px 24px;}
+    .empty-icon{font-size:36px;margin-bottom:14px;}
+    .empty-title{font-size:16px;font-weight:600;margin-bottom:8px;}
+    .empty-sub{font-size:13px;color:var(--text-secondary);max-width:340px;
+      margin:0 auto 22px;line-height:1.6;}
+
+    /* QUICK ACTIONS */
+    .action-item{display:flex;align-items:center;gap:12px;padding:9px 0;
+      border-bottom:1px solid var(--border);}
+    .action-item:last-child{border-bottom:none;}
+    .action-dot{width:8px;height:8px;border-radius:50%;background:#E07B10;flex-shrink:0;}
+    .action-name{font-size:13px;font-weight:500;}
+    .action-meta{font-size:11px;color:var(--text-muted);margin-top:1px;}
+    .action-body{flex:1;}
+    .no-actions{font-size:13px;color:var(--text-muted);text-align:center;padding:16px 0;}
+
+    /* CALENDAR */
+    .cal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .cal-event{display:flex;gap:14px;align-items:flex-start;padding:12px;
+      border-radius:6px;border:1px solid var(--border);background:var(--surface);}
+    .cal-date-box{width:44px;text-align:center;flex-shrink:0;}
+    .cal-month{font-size:10px;font-weight:600;color:var(--text-muted);}
+    .cal-day{font-size:26px;font-weight:700;line-height:1.1;}
+    .cal-year{font-size:10px;color:var(--text-muted);}
+    .cal-info{flex:1;}
+    .cal-name{font-size:13px;font-weight:600;}
+    .cal-desc{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+    .cal-tag{display:inline-block;margin-top:6px;font-size:10px;font-weight:600;
+      padding:2px 7px;border-radius:3px;}
+    .tag-past{background:var(--critical-bg);color:var(--critical);}
+    .tag-upcoming{background:var(--info-bg);color:var(--info);}
+    .tag-future{background:var(--success-bg);color:var(--success);}
+    .cal-note{margin-top:12px;padding:10px 12px;background:var(--info-bg);
+      border-radius:6px;font-size:12px;color:var(--info);line-height:1.5;}
+
+    /* LOG */
+    .log-entry{display:flex;gap:14px;align-items:flex-start;padding:10px 0;
+      border-bottom:1px solid var(--border);}
+    .log-entry:last-child{border-bottom:none;}
+    .log-date{font-size:12px;font-weight:500;color:var(--text-secondary);width:90px;flex-shrink:0;padding-top:2px;}
+    .log-body{flex:1;}
+    .log-client{font-size:13px;font-weight:600;}
+    .log-detail{font-size:12px;color:var(--text-secondary);margin-top:2px;}
+    .log-status{font-size:11px;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap;}
+    .log-sent{background:var(--success-bg);color:var(--success);}
+    .log-noresponse{background:var(--warning-bg);color:var(--warning);}
+    .log-delivered{background:var(--info-bg);color:var(--info);}
+    .log-payment{background:var(--success-bg);color:var(--success);}
+    .log-empty{font-size:13px;color:var(--text-muted);text-align:center;padding:20px 0;}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,29,46,.62);
+      backdrop-filter:blur(2px);z-index:200;display:flex;align-items:center;
+      justify-content:center;opacity:0;pointer-events:none;
+      transition:opacity .15s;padding:16px;}
+    .modal-overlay.open{opacity:1;pointer-events:all;}
+    .modal{background:var(--surface);border-radius:10px;width:100%;max-width:500px;
+      max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-md);
+      transform:translateY(14px) scale(.97);transition:transform .16s;}
+    .modal-overlay.open .modal{transform:none;}
+    .modal-header{display:flex;align-items:flex-start;justify-content:space-between;
+      padding:17px 20px 13px;border-bottom:1px solid var(--border);}
+    .modal-title{font-size:15px;font-weight:600;}
+    .modal-subtitle{font-size:12px;color:var(--text-muted);margin-top:3px;}
+    .modal-close{background:none;border:none;cursor:pointer;color:var(--text-muted);
+      font-size:16px;width:28px;height:28px;display:flex;align-items:center;
+      justify-content:center;border-radius:6px;flex-shrink:0;margin-left:8px;}
+    .modal-close:hover{background:var(--bg);}
+    .modal-body{padding:18px 20px;}
+    .modal-footer{padding:13px 20px;border-top:1px solid var(--border);
+      display:flex;justify-content:flex-end;gap:8px;}
+
+    /* FORM */
+    .field-group{margin-bottom:13px;}
+    .field-group:last-child{margin-bottom:0;}
+    .field-label{font-size:12px;font-weight:600;color:var(--text-secondary);
+      margin-bottom:5px;display:block;}
+    .field-input,.field-select,.field-textarea{width:100%;padding:8px 12px;
+      border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;
+      color:var(--text-primary);background:var(--bg);outline:none;}
+    .field-input:focus,.field-select:focus,.field-textarea:focus{
+      border-color:#E07B10;box-shadow:0 0 0 2px rgba(224,123,16,.12);}
+    .field-textarea{resize:vertical;min-height:90px;line-height:1.5;}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+
+    /* CONFIRM BOX */
+    .confirm-box{border-radius:8px;padding:14px 16px;margin-bottom:14px;}
+    .confirm-box.success{background:var(--success-bg);border:1px solid rgba(26,122,88,.2);}
+    .confirm-box.warning{background:var(--warning-bg);border:1px solid rgba(184,134,11,.2);}
+    .confirm-box p{font-size:13px;line-height:1.75;color:var(--text-primary);}
+
+    /* REMIND PREVIEW */
+    .remind-preview{background:var(--bg);border:1px solid var(--border);border-radius:6px;
+      padding:12px 14px;font-size:12px;color:var(--text-secondary);line-height:1.65;
+      max-height:165px;overflow-y:auto;white-space:pre-line;margin-top:8px;}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:22px;right:22px;background:#162C4A;color:#fff;
+      padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;
+      opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;
+      pointer-events:none;z-index:300;max-width:360px;}
+    .toast.show{opacity:1;transform:none;}
+    .toast.toast-success{background:#1A7A58;}
+    .toast.toast-info{background:#2471A3;}
+    .toast.toast-warn{background:#B8860B;}
+
+
+    /* FORCED DARK MODE (data-theme=dark) */
+    :root[data-theme="dark"]{
+      --bg:#0F1D2E;--surface:#1A3050;
+      --sidebar-bg:#0A1520;--sidebar-text:rgba(255,255,255,.5);
+      --text-primary:#D8E5F3;--text-secondary:#7A9AB8;--text-muted:#4A6580;
+      --border:#1E3550;--shadow-md:0 10px 32px rgba(0,0,0,.45);
+      --flag-bg:#2D1E08;--critical-bg:#2D0D0A;--warning-bg:#2D2308;
+      --info-bg:#0A1D2E;--success-bg:#0A2018;--neutral-bg:#162030;
+    }
+    /* THEME TOGGLE BUTTON */
+    .theme-btn{background:transparent;border:1px solid var(--border);border-radius:6px;
+      padding:5px 8px;cursor:pointer;color:var(--text-secondary);display:flex;
+      align-items:center;transition:background .12s;}
+    .theme-btn:hover{background:var(--bg);}
+    /* PURPOSE BANNER */
+    .purpose-pill{display:inline-flex;align-items:center;gap:5px;background:var(--info-bg);
+      color:var(--info);font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;
+      margin-left:8px;vertical-align:middle;}
+    /* ACTIVITY LOG BADGES */
+    .act-add   {background:var(--success-bg);color:var(--success);}
+    .act-edit  {background:var(--warning-bg);color:var(--warning);}
+    .act-paid  {background:var(--success-bg);color:var(--success);}
+    .act-remind{background:var(--info-bg);   color:var(--info);}
+    .act-notes {background:var(--warning-bg);color:var(--warning);}
+    .act-login {background:var(--neutral-bg);color:var(--neutral);}
+    .act-refresh{background:var(--neutral-bg);color:var(--neutral);}
+    .act-batch {background:var(--info-bg);   color:var(--info);}
+    .act-export{background:var(--neutral-bg);color:var(--neutral);}
+    .act-filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+    .act-filter{padding:4px 10px;border:1px solid var(--border);border-radius:5px;
+      font-size:11px;font-weight:600;cursor:pointer;background:var(--surface);
+      color:var(--text-secondary);transition:background .12s;}
+    .act-filter.on{background:var(--info);color:#fff;border-color:var(--info);}
+    /* COUNTY CARDS */
+    .county-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+    .county-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+      padding:16px 18px;transition:border-color .15s;}
+    .county-card:hover{border-color:#2471A3;}
+    .county-hdr{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+    .county-name{font-size:14px;font-weight:600;color:var(--text-primary);}
+    .county-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;}
+    .tag-primary{background:var(--flag-bg);color:var(--flag);}
+    .county-cities{font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;}
+    .county-links{display:flex;gap:7px;flex-wrap:wrap;}
+    .county-link{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;
+      border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;
+      color:var(--text-secondary);text-decoration:none;background:var(--bg);
+      transition:background .12s,color .12s,border-color .12s;}
+    .county-link:hover{background:var(--info-bg);color:var(--info);border-color:rgba(36,113,163,.3);}
+    .county-link.primary-link{background:var(--info-bg);color:var(--info);border-color:rgba(36,113,163,.3);}
+    .lookup-note{background:var(--info-bg);border:1px solid rgba(36,113,163,.2);border-radius:8px;
+      padding:12px 16px;font-size:12px;color:var(--info);line-height:1.6;margin-bottom:18px;}
+
+    /* TWO-FACTOR AUTH SCREENS */
+    #twoFASetupScreen,#twoFAVerifyScreen{background:#162C4A;align-items:center;
+      justify-content:center;padding:24px;overflow-y:auto;}
+    .tfa-title{font-size:16px;font-weight:600;color:#1A2B3C;margin-bottom:6px;}
+    .tfa-sub{font-size:13px;color:#5C6E82;margin-bottom:18px;line-height:1.6;}
+    .tfa-steps{margin-bottom:18px;}
+    .tfa-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:9px;}
+    .tfa-num{width:22px;height:22px;border-radius:50%;background:#E07B10;color:#fff;
+      font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+    .tfa-text{font-size:12px;color:#5C6E82;line-height:1.5;}
+    .tfa-text strong{color:#1A2B3C;}
+    .qr-wrap{background:#fff;border-radius:10px;padding:14px;width:fit-content;
+      margin:0 auto 14px;border:1px solid #DDE5EE;}
+    .secret-wrap{background:#EEF2F7;border-radius:7px;padding:9px 13px;text-align:center;
+      margin-bottom:14px;border:1px solid #DDE5EE;}
+    .secret-label{font-size:10px;font-weight:600;color:#8A9AAA;margin-bottom:4px;}
+    .secret-key{font-family:monospace;font-size:14px;font-weight:700;
+      letter-spacing:3px;color:#162C4A;word-break:break-all;}
+    .tfa-code-input{font-size:22px;letter-spacing:10px;text-align:center;
+      font-weight:700;font-family:monospace;padding:10px 12px !important;}
+    .tfa-link{font-size:12px;color:#8A9AAA;text-align:center;margin-top:12px;cursor:pointer;}
+    .tfa-link a{color:#2471A3;text-decoration:none;}
+    .tfa-link a:hover{text-decoration:underline;}
+    @media(max-width:860px){.county-grid{grid-template-columns:1fr;}}
+
+    /* TWO-FACTOR AUTH SCREENS */
+    #twoFASetupScreen,#twoFAVerifyScreen{background:#162C4A;align-items:center;
+      justify-content:center;padding:24px;overflow-y:auto;}
+    .tfa-title{font-size:16px;font-weight:600;color:#1A2B3C;margin-bottom:6px;}
+    .tfa-sub{font-size:13px;color:#5C6E82;margin-bottom:18px;line-height:1.6;}
+    .tfa-steps{margin-bottom:18px;}
+    .tfa-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:9px;}
+    .tfa-num{width:22px;height:22px;border-radius:50%;background:#E07B10;color:#fff;
+      font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+    .tfa-text{font-size:12px;color:#5C6E82;line-height:1.5;}
+    .tfa-text strong{color:#1A2B3C;}
+    .qr-wrap{background:#fff;border-radius:10px;padding:14px;width:fit-content;
+      margin:0 auto 14px;border:1px solid #DDE5EE;}
+    .secret-wrap{background:#EEF2F7;border-radius:7px;padding:9px 13px;text-align:center;
+      margin-bottom:14px;border:1px solid #DDE5EE;}
+    .secret-label{font-size:10px;font-weight:600;color:#8A9AAA;margin-bottom:4px;}
+    .secret-key{font-family:monospace;font-size:14px;font-weight:700;
+      letter-spacing:3px;color:#162C4A;word-break:break-all;}
+    .tfa-code-input{font-size:22px;letter-spacing:10px;text-align:center;
+      font-weight:700;font-family:monospace;padding:10px 12px !important;}
+    .tfa-link{font-size:12px;color:#8A9AAA;text-align:center;margin-top:12px;cursor:pointer;}
+    .tfa-link a{color:#2471A3;text-decoration:none;}
+    .tfa-link a:hover{text-decoration:underline;}
+    @media(max-width:860px){
+      .stats-grid{grid-template-columns:repeat(2,1fr);}
+      .two-col{grid-template-columns:1fr;}
+      .cal-grid{grid-template-columns:1fr;}
+      .share-steps{grid-template-columns:1fr;}
+      .sidebar{width:190px;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  LOADING SCREEN                                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  LOGIN SCREEN                                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen active" id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="login-pip"></span>
+      <span class="login-brand-name">TaxAce</span>
+    </div>
+    <div class="login-subtitle">Property Tax Delinquency Dashboard</div>
+    <div class="login-badge">
+      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Testing Mode
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="loginUser">Username</label>
+      <input class="login-input" type="text" id="loginUser" placeholder="Enter username"
+        autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="loginPass">Password</label>
+      <div class="pw-wrap">
+        <input class="login-input" type="password" id="loginPass" placeholder="Enter password"
+          autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"
+          style="padding-right:40px">
+        <button class="pw-toggle" onclick="togglePw()" id="pwToggle" type="button" aria-label="Show password">
+          <svg id="eyeIcon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Log In</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-footer">
+      For internal use only &middot; TaxAce Business Solutions
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  2FA SETUP SCREEN                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="twoFASetupScreen">
+  <div class="login-card" style="max-width:440px">
+    <div class="login-brand">
+      <span class="login-pip"></span>
+      <span class="login-brand-name">TaxAce</span>
+    </div>
+    <div class="login-subtitle">Set Up Two-Factor Authentication</div>
+    <div class="tfa-badge" style="display:inline-flex;align-items:center;gap:5px;background:#EBF5FB;color:#2471A3;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:18px;border:1px solid rgba(36,113,163,.25)">
+      One-time setup on this device
+    </div>
+    <div class="tfa-steps">
+      <div class="tfa-step"><div class="tfa-num">1</div><div class="tfa-text">Download <strong>Google Authenticator</strong>, <strong>Microsoft Authenticator</strong>, or <strong>Authy</strong> on your phone.</div></div>
+      <div class="tfa-step"><div class="tfa-num">2</div><div class="tfa-text">Open the app, tap <strong>+ Add account</strong> or <strong>Scan QR code</strong>, then scan the code below.</div></div>
+      <div class="tfa-step"><div class="tfa-num">3</div><div class="tfa-text">Enter the <strong>6-digit code</strong> from the app to verify setup.</div></div>
+    </div>
+    <div class="qr-wrap"><div id="qrcodeDiv"></div></div>
+    <div class="secret-wrap">
+      <div class="secret-label">Can't scan? Enter this key manually in the app</div>
+      <div class="secret-key" id="manualSecretDisplay"></div>
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="tfaSetupCode">Enter the 6-digit code from your app</label>
+      <input class="login-input tfa-code-input" type="text" id="tfaSetupCode"
+        maxlength="6" inputmode="numeric" placeholder="000000"
+        onkeydown="if(event.key==='Enter')confirmTFASetup()">
+    </div>
+    <button class="login-btn" id="tfaSetupBtn" onclick="confirmTFASetup()">Verify &amp; Continue</button>
+    <div class="login-error" id="tfaSetupError"></div>
+    <div class="login-footer">TaxAce Business Solutions &middot; Internal Use Only</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  2FA VERIFY SCREEN                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="twoFAVerifyScreen">
+  <div class="login-card" style="max-width:400px">
+    <div class="login-brand">
+      <span class="login-pip"></span>
+      <span class="login-brand-name">TaxAce</span>
+    </div>
+    <div class="login-subtitle">Two-Factor Authentication</div>
+    <p class="tfa-sub">Open your authenticator app and enter the 6-digit code for <strong>TaxAce Dashboard</strong>.</p>
+    <div class="login-field">
+      <label class="login-label" for="tfaVerifyCode">Authenticator code</label>
+      <input class="login-input tfa-code-input" type="text" id="tfaVerifyCode"
+        maxlength="6" inputmode="numeric" placeholder="000000"
+        autocomplete="one-time-code"
+        onkeydown="if(event.key==='Enter')confirmTFAVerify()">
+    </div>
+    <button class="login-btn" id="tfaVerifyBtn" onclick="confirmTFAVerify()">Verify</button>
+    <div class="login-error" id="tfaVerifyError"></div>
+    <div class="tfa-link">Different device? <a href="#" onclick="resetTFA(event)">Re-scan QR code</a></div>
+    <div class="login-footer">TaxAce Business Solutions &middot; Internal Use Only</div>
+  </div>
+</div>
+
+<div class="screen" id="loadingScreen" style="background:var(--bg);align-items:center;
+  justify-content:center;flex-direction:column;gap:16px;">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Connecting to Google Sheets…</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  ERROR SCREEN                                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="errorScreen" style="background:var(--bg);align-items:center;
+  justify-content:center;flex-direction:column;gap:12px;padding:40px;">
+  <div class="error-icon">⚠️</div>
+  <div class="error-title">Could not connect to Google Sheets</div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="error-actions">
+    <button class="btn btn-primary btn-sm" onclick="retryLoad()">Try Again</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!--  MAIN APP                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="mainApp">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-row">
+        <span class="brand-pip"></span>
+        <div class="brand-name">TaxAce</div>
+      </div>
+      <div class="brand-sub">Property Tax Delinquency</div>
+      <div class="sync-badge" id="syncBadge">
+        <span class="sync-dot"></span>
+        <span id="syncTime">Not synced</span>
+      </div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-lbl">Dashboard</div>
+      <div class="nav-item active" data-panel="flagged" onclick="switchPanel('flagged',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        Flagged Clients
+        <span class="nav-badge" id="navBadge">0</span>
+      </div>
+      <div class="nav-item" data-panel="overview" onclick="switchPanel('overview',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Summary
+      </div>
+      <div class="nav-item" data-panel="log" onclick="switchPanel('log',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        Reminder Log
+      </div>
+      <div class="nav-item" data-panel="calendar" onclick="switchPanel('calendar',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </div>
+      <div class="nav-lbl" style="margin-top:10px">Tools</div>
+      <div class="nav-item" data-panel="activity" onclick="switchPanel('activity',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Activity Log
+      </div>
+      <div class="nav-item" data-panel="lookup" onclick="switchPanel('lookup',this)">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        County Lookup
+      </div>
+    </nav>
+    <div class="sidebar-staff">
+      <label class="staff-lbl">Your name (for logs)</label>
+      <input class="staff-input" id="staffNameInput" placeholder="Enter your name…" oninput="saveStaffName()">
+    </div>
+    <div class="sidebar-footer">
+      Data source: Google Sheets<br>
+      Sheet: Property Tax Deliquency Reminder<br>
+      <br>
+      <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:rgba(255,255,255,.2);font-size:10px">v1.0 &middot; Solano County</span>
+        <button onclick="logout()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+          border-radius:5px;color:rgba(255,255,255,.5);font-size:11px;font-weight:600;
+          padding:3px 10px;cursor:pointer;font-family:inherit;" title="Log out">Log out</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>
+          <svg width="8" height="16" viewBox="0 0 8 16" style="flex-shrink:0"><rect width="8" height="16" rx="1" fill="#E07B10"/></svg>
+          Property Tax Delinquency
+        </h1>
+        <p>
+          <span class="purpose-pill">Property Tax Monitoring &amp; Reminder</span> Live from Google Sheets &middot; Solano County, CA
+          &nbsp;<span class="sync-indicator" id="syncIndicator">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Synced
+          </span>
+        </p>
+      </div>
+      <div class="topbar-actions">
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light / dark mode">
+          <svg id="themeIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <div class="divider-v"></div>
+        <button class="btn btn-outline btn-sm" onclick="refreshData()" id="refreshBtn">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+        <div class="divider-v"></div>
+        <button class="btn btn-outline btn-sm" onclick="goToAddClient()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Client
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="batchRemind()">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Send Reminders
+        </button>
+      </div>
+    </div>
+
+    <div class="panels">
+
+      <!-- FLAGGED CLIENTS -->
+      <div class="panel active" id="panel-flagged">
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="search-input" type="text" id="searchInput"
+              placeholder="Search name or property…" oninput="filterTable()">
+            <select class="select-filter" id="statusFilter" onchange="filterTable()">
+              <option value="">All Statuses</option>
+              <option value="Escalated">Escalated</option>
+              <option value="2nd Notice">2nd Notice</option>
+              <option value="Reminder Sent">Reminder Sent</option>
+              <option value="Reminder Set">Reminder Set</option>
+              <option value="New Flag">New Flag</option>
+            </select>
+            <select class="select-filter" id="installFilter" onchange="filterTable()">
+              <option value="">All Installments</option>
+              <option value="1st">1st</option>
+              <option value="2nd">2nd</option>
+            </select>
+            <span class="row-count" id="rowCount">—</span>
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()" title="Download as CSV">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
+            <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="openAddModal()">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Client
+            </button>
+          </div>
+          <div id="emptyState" style="display:none">
+            <div class="empty-state">
+              <div class="empty-icon">🚩</div>
+              <div class="empty-title">No flagged clients</div>
+              <div class="empty-sub">No unpaid property tax installments on record. Add a client or refresh to check the sheet.</div>
+            </div>
+          </div>
+          <div id="tableWrap" style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Property</th>
+                  <th>Installment</th>
+                  <th>Amount Due</th>
+                  <th>Delinquent Since</th>
+                  <th>Days</th>
+                  <th>Status</th>
+                  <th>Last Contact</th>
+                  <th style="min-width:225px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="panel" id="panel-overview">
+        <div class="share-card">
+          <h3>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Live data from Google Sheets — how staff stay in sync
+          </h3>
+          <div class="share-steps">
+            <div class="share-step"><div class="share-num">1</div><div class="share-text">All updates (Paid, Remind, Edit, Add) write directly to your Google Sheet in real time.</div></div>
+            <div class="share-step"><div class="share-num">2</div><div class="share-text">Each staff member opens this dashboard HTML file and connects once with the Web App URL.</div></div>
+            <div class="share-step"><div class="share-num">3</div><div class="share-text">Click <strong>Refresh</strong> anytime to reload the latest data from the sheet.</div></div>
+            <div class="share-step"><div class="share-num">4</div><div class="share-text">The Google Sheet remains the source of truth — you can also edit it directly if needed.</div></div>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card card-flag"><div class="stat-label">Total Flagged</div>
+            <div class="stat-value" id="stat-total">—</div><div class="stat-sub">clients with unpaid installments</div></div>
+          <div class="stat-card card-critical"><div class="stat-label">Escalated</div>
+            <div class="stat-value" id="stat-escalated">—</div><div class="stat-sub">require urgent follow-up</div></div>
+          <div class="stat-card card-warning"><div class="stat-label">Total Amount Overdue</div>
+            <div class="stat-value" id="stat-amount">—</div><div class="stat-sub">across all flagged clients</div></div>
+          <div class="stat-card card-info"><div class="stat-label">Not Yet Contacted</div>
+            <div class="stat-value" id="stat-new">—</div><div class="stat-sub">new flags, no reminder sent</div></div>
+        </div>
+        <div class="two-col">
+          <div class="card"><div class="card-title">Status Breakdown</div><div id="statusBreakdown"></div></div>
+          <div class="card"><div class="card-title">Actions Needed Now</div><div id="quickActions"></div></div>
+        </div>
+      </div>
+
+      <!-- REMINDER LOG -->
+      <div class="panel" id="panel-log">
+        <div class="card">
+          <div class="card-title">Reminder History — pulled from Google Sheets</div>
+          <div id="reminderLogEl"></div>
+        </div>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="panel" id="panel-calendar">
+        <div class="card">
+          <div class="card-title">Solano County Property Tax — Installment Schedule</div>
+          <div class="cal-grid">
+            <div class="cal-event"><div class="cal-date-box"><div class="cal-month">Dec</div><div class="cal-day">10</div><div class="cal-year">2025</div></div><div class="cal-info"><div class="cal-name">1st Installment Delinquent — 2025-26</div><div class="cal-desc">4 clients still unpaid.</div><span class="cal-tag tag-past">Passed · 315 days ago</span></div></div>
+            <div class="cal-event"><div class="cal-date-box"><div class="cal-month">Apr</div><div class="cal-day">10</div><div class="cal-year">2026</div></div><div class="cal-info"><div class="cal-name">2nd Installment Delinquent — 2025-26</div><div class="cal-desc">9 clients still unpaid.</div><span class="cal-tag tag-past">Passed · 194 days ago</span></div></div>
+            <div class="cal-event" style="border-color:#2471A3"><div class="cal-date-box"><div class="cal-month">Nov</div><div class="cal-day">1</div><div class="cal-year">2026</div></div><div class="cal-info"><div class="cal-name">1st Installment Due — 2026-27</div><div class="cal-desc">Send proactive reminder now. 11 days away.</div><span class="cal-tag tag-upcoming">Upcoming · 11 days</span></div></div>
+            <div class="cal-event"><div class="cal-date-box"><div class="cal-month">Dec</div><div class="cal-day">10</div><div class="cal-year">2026</div></div><div class="cal-info"><div class="cal-name">1st Installment Delinquent — 2026-27</div><div class="cal-desc">Run flag check after this date.</div><span class="cal-tag tag-future">Upcoming · 50 days</span></div></div>
+            <div class="cal-event"><div class="cal-date-box"><div class="cal-month">Feb</div><div class="cal-day">1</div><div class="cal-year">2027</div></div><div class="cal-info"><div class="cal-name">2nd Installment Due — 2026-27</div><div class="cal-desc">Send proactive reminder around Jan 22.</div><span class="cal-tag tag-future">Upcoming · 103 days</span></div></div>
+            <div class="cal-event"><div class="cal-date-box"><div class="cal-month">Apr</div><div class="cal-day">10</div><div class="cal-year">2027</div></div><div class="cal-info"><div class="cal-name">2nd Installment Delinquent — 2026-27</div><div class="cal-desc">Run flag check after this date.</div><span class="cal-tag tag-future">Upcoming · ~170 days</span></div></div>
+          </div>
+          <div class="cal-note"><strong>Verify annually:</strong> Confirm exact delinquency dates with Solano County Tax Collector each year. <strong>[NEEDS CONFIRMATION]</strong></div>
+        </div>
+      </div>
+
+
+      <!-- ACTIVITY LOG -->
+      <div class="panel" id="panel-activity">
+        <div class="card">
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+            Activity Log — This Session
+            <button class="btn btn-ghost btn-sm" onclick="clearActivityLog()">Clear</button>
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
+            Tracks every action taken during this session: reminders sent, payments confirmed, edits,
+            additions, and exports. Each entry records who did it and when. For reminder history
+            stored in Google Sheets, see the Reminder Log tab.
+          </p>
+          <div class="act-filter-row" id="actFilterRow">
+            <span class="act-filter on" data-type="ALL" onclick="setActFilter(this,'ALL')">All</span>
+            <span class="act-filter" data-type="REMIND" onclick="setActFilter(this,'REMIND')">Reminders</span>
+            <span class="act-filter" data-type="PAID" onclick="setActFilter(this,'PAID')">Payments</span>
+            <span class="act-filter" data-type="EDIT,ADD" onclick="setActFilter(this,'EDIT,ADD')">Edits &amp; Adds</span>
+            <span class="act-filter" data-type="NOTES" onclick="setActFilter(this,'NOTES')">Notes</span>
+          </div>
+          <div id="activityLogEl"><div class="log-empty">No activity yet this session. Actions you take will appear here.</div></div>
+        </div>
+      </div>
+
+      <!-- COUNTY LOOKUP -->
+      <div class="panel" id="panel-lookup">
+        <div class="lookup-note">
+          <strong>Property Tax Lookup — CA County Portals.</strong> Use these links to verify delinquency status on the county tax collector website and look up assessment numbers. Solano County is the primary county. Other counties listed for clients with properties elsewhere.
+        </div>
+        <div class="table-toolbar" style="margin-bottom:14px;padding:0">
+          <input class="search-input" type="text" id="countySearch" style="max-width:300px"
+            placeholder="Search counties or cities…" oninput="filterCounties()">
+          <span class="row-count" id="countyCount" style="margin-left:8px">9 counties</span>
+        </div>
+        <div class="county-grid" id="countyGrid"></div>
+
+        <div class="card" style="margin-top:18px">
+          <div class="card-title">Suggested Review Workflow</div>
+          <ol style="font-size:13px;color:var(--text-secondary);line-height:2;padding-left:20px;">
+            <li>Open the county <strong>Tax Collector portal</strong> for the client's property county.</li>
+            <li>Search by <strong>property address, APN</strong> (Assessor's Parcel Number), assessment number, or fee parcel number — the search method varies by county portal.</li>
+            <li>Review the current <strong>tax bill, outstanding balance, payment history, and delinquency status</strong>.</li>
+            <li>Save the tax bill or search result in the <strong>client's Canopy file</strong>.</li>
+          </ol>
+          <div style="margin-top:12px;padding:10px 14px;background:var(--warning-bg);border-radius:6px;font-size:12px;color:var(--warning);line-height:1.6">
+            <strong>Note:</strong> Supplemental bills and prior-year delinquent taxes may be listed separately from the regular annual bill. Verify any outstanding balance with the county before finalizing the review.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div><!-- /mainApp -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">Title</div>
+        <div class="modal-subtitle" id="modalSubtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────
+// To update the Apps Script URL, change the line below.
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw9nU25XggnUfz9_zEcX3lPIVz0nrHnHmWthf8fUjdh5zjaTx1ee8IkKRAyuUtqSPc/exec';
+
+const NAME_KEY = 'taxace_staff_name';
+let staffName  = '';
+
+function loadStaffName() {
+  staffName = localStorage.getItem(NAME_KEY) || '';
+}
+function saveStaffName() {
+  staffName = document.getElementById('staffNameInput').value.trim();
+  localStorage.setItem(NAME_KEY, staffName);
+}
+function loggedBy() { return staffName || 'Staff'; }
+
+// ── STATE ────────────────────────────────────────────
+let clientData  = [];
+let reminderLog = [];
+let notesMap    = {};
+
+// ── SCREEN MANAGEMENT ────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = 'none';
+  });
+  const el = document.getElementById(id);
+  el.style.display = 'flex';
+  requestAnimationFrame(() => el.classList.add('active'));
+}
+
+// ── API (JSONP — works from local file, any browser, no CORS needed) ────────
+function apiCall(action, data) {
+  return new Promise((resolve, reject) => {
+    const cb = '_ta_' + Date.now() + '_' + Math.floor(Math.random()*99999);
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timed out. Check your internet connection.'));
+    }, 20000);
+    function cleanup() { clearTimeout(timer); delete window[cb]; if (el.parentNode) el.remove(); }
+    window[cb] = (result) => { cleanup(); result.ok ? resolve(result) : reject(new Error(result.error || 'Script returned an error')); };
+    let url = SCRIPT_URL + '?callback=' + cb + '&action=' + encodeURIComponent(action);
+    if (data) url += '&data=' + encodeURIComponent(JSON.stringify(data));
+    const el = document.createElement('script');
+    el.src = url;
+    el.onerror = () => { cleanup(); reject(new Error('Could not reach Google Sheets. Make sure the Apps Script is deployed with "Who has access: Anyone" and you have internet access.')); };
+    document.head.appendChild(el);
+  });
+}
+
+function retryLoad() { loadData(); }
+
+// ── DATA LOADING ─────────────────────────────────────
+async function loadData() {
+  showScreen('loadingScreen');
+  document.getElementById('loadingText').textContent = 'Connecting to Google Sheets…';
+  try {
+    const result = await apiCall('read');
+    clientData  = result.clients  || [];
+    reminderLog = result.reminders || [];
+    notesMap = {};
+    clientData.forEach(c => { if (c.notes) notesMap[c.id] = c.notes; });
+    logActivity('LOGIN','Logged in · '+clientData.length+' clients loaded from Google Sheets');
+    markSynced();
+    showScreen('mainApp');
+    if (staffName) document.getElementById('staffNameInput').value = staffName;
+    updateAll();
+    try {
+      const saved = localStorage.getItem('taxace_ptd_tab');
+      if (saved) {
+        const el = document.querySelector('[data-panel="'+saved+'"]');
+        if (el) switchPanel(saved, el);
+      }
+    } catch(e) {}
+  } catch(err) {
+    document.getElementById('errorMsg').textContent =
+      err.message + ' — Check that the Web App URL is correct and the script is deployed.';
+    showScreen('errorScreen');
+  }
+}
+
+async function refreshData() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  setSyncState('syncing');
+  try {
+    const result = await apiCall('read');
+    clientData  = result.clients  || [];
+    reminderLog = result.reminders || [];
+    notesMap = {};
+    clientData.forEach(c => { if (c.notes) notesMap[c.id] = c.notes; });
+    markSynced();
+    updateAll();
+    logActivity('REFRESH','Data refreshed · '+clientData.length+' clients');
+    showToast('Data refreshed from Google Sheets.','success');
+  } catch(err) {
+    showToast('Refresh failed: ' + err.message,'warn');
+    setSyncState('error');
+  } finally { btn.disabled = false; }
+}
+
+function markSynced() {
+  const t = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  document.getElementById('syncTime').textContent = 'Synced ' + t;
+  setSyncState('ok');
+  const ind = document.getElementById('syncIndicator');
+  ind.classList.add('show');
+  ind.classList.remove('syncing');
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => ind.classList.remove('show'), 3000);
+}
+
+function setSyncState(state) {
+  const ind = document.getElementById('syncIndicator');
+  if (state === 'syncing') {
+    ind.classList.add('show','syncing');
+    ind.textContent = 'Saving…';
+  } else if (state === 'error') {
+    ind.classList.add('show');
+    ind.classList.remove('syncing');
+    ind.innerHTML = '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Error';
+  } else {
+    ind.innerHTML = '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Synced';
+  }
+}
+
+
+// ── ACTIVITY LOG ──────────────────────────────────
+let activityLog = [];
+let actFilter   = 'ALL';
+
+function logActivity(type, detail, clientId) {
+  const now = new Date();
+  activityLog.unshift({
+    time: now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+    date: today(), user: loggedBy(), type, detail, clientId: clientId||null,
+  });
+  if (activityLog.length > 150) activityLog.pop();
+  renderActivityLog();
+}
+
+function renderActivityLog() {
+  const el = document.getElementById('activityLogEl');
+  if (!el) return;
+  const cls = {ADD:'act-add',EDIT:'act-edit',PAID:'act-paid',REMIND:'act-remind',
+    NOTES:'act-notes',LOGIN:'act-login',REFRESH:'act-refresh',BATCH:'act-batch',EXPORT:'act-export'};
+  const lbl = {ADD:'Added',EDIT:'Edited',PAID:'Paid',REMIND:'Reminded',
+    NOTES:'Notes',LOGIN:'Login',REFRESH:'Refresh',BATCH:'Batch Send',EXPORT:'Exported'};
+  const types = actFilter === 'ALL' ? null : actFilter.split(',');
+  const filtered = types ? activityLog.filter(a => types.includes(a.type)) : activityLog;
+  el.innerHTML = filtered.length
+    ? filtered.map(a =>
+        '<div class="log-entry">'
+        +'<div class="log-date">'+a.time+'</div>'
+        +'<div class="log-body"><div class="log-client">'+a.detail+'</div>'
+        +'<div class="log-detail">'+a.date+' &middot; '+a.user+'</div></div>'
+        +'<span class="badge '+(cls[a.type]||'')+'">'+(lbl[a.type]||a.type)+'</span></div>').join('')
+    : '<div class="log-empty">No '+actFilter.toLowerCase()+' activity yet this session.</div>';
+}
+
+function clearActivityLog() {
+  activityLog = [];
+  renderActivityLog();
+}
+
+function setActFilter(el, type) {
+  actFilter = type;
+  document.querySelectorAll('.act-filter').forEach(f => f.classList.remove('on'));
+  el.classList.add('on');
+  renderActivityLog();
+}
+
+// ── COUNTY LOOKUP ──────────────────────────────────
+// County data — links verified from TaxAce official document (Oct 2026)
+const COUNTIES = [
+  { name:'Solano County', tag:'Primary',
+    cities:'Fairfield · Vacaville · Vallejo · Benicia · Suisun City · Dixon · Rio Vista',
+    links:[
+      {label:'Tax Bill Lookup & Payment',  url:'https://ca-solano.publicaccessnow.com/TaxCollector/TaxSearch.aspx',  primary:true},
+      {label:'Assessor / Property Search', url:'https://ca-solano.publicaccessnow.com/Assessor/PropertySearch.aspx', primary:false},
+    ]},
+  { name:'Napa County', tag:null,
+    cities:'Napa · St. Helena · Calistoga · American Canyon',
+    links:[
+      {label:'Tax Bill Search',           url:'https://common2.mptsweb.com/mbc/napa/tax/search/', primary:true},
+      {label:'Assessor / Property Resources', url:'https://www.napacounty.gov/3659/Open-Napa-County', primary:false},
+    ]},
+  { name:'Yolo County', tag:null,
+    cities:'Woodland · Davis · Winters · West Sacramento',
+    links:[
+      {label:'Property Tax Info & FAQs', url:'https://www.yolocounty.org/government/general-government-departments/financial-services/property-tax/frequently-asked-questions', primary:true},
+      {label:'Assessor / Parcel Search',  url:'https://common1.mptsweb.com/mbap/yolo/asr', primary:false},
+    ]},
+  { name:'Sacramento County', tag:null,
+    cities:'Sacramento · Elk Grove · Rancho Cordova · Folsom',
+    links:[
+      {label:'Tax Bills & Other Offices', url:'https://assessor.saccounty.gov/us/en/links-to-other-offices.html', primary:true},
+      {label:'Assessor Parcel Viewer',    url:'https://assessorparcelviewer.saccounty.gov/jsviewer/assessor.html', primary:false},
+    ]},
+  { name:'Contra Costa County', tag:null,
+    cities:'Concord · Richmond · Walnut Creek · Martinez · Antioch',
+    links:[
+      {label:'Tax Bill Lookup',          url:'https://taxcolp.cccttc.us/lookup/', primary:true},
+      {label:'Maps & Property Info',     url:'https://www.contracosta.ca.gov/552/Maps-Property-Information', primary:false},
+    ]},
+  { name:'Alameda County', tag:null,
+    cities:'Oakland · Fremont · Hayward · Berkeley · Livermore',
+    links:[
+      {label:'Property Tax Lookup & Payment', url:'https://propertytax.alamedacountyca.gov/search', primary:true},
+      {label:'Property Info / Parcel Search', url:'https://propinfo.acgov.org/', primary:false},
+    ]},
+  { name:'Marin County', tag:null,
+    cities:'San Rafael · Novato · Mill Valley · Sausalito',
+    links:[
+      {label:'Tax Bill Lookup',  url:'https://apps.marincounty.org/TaxBillOnline', primary:true},
+      {label:'Parcel Search',    url:'https://apps.marincounty.org/TaxRollSearch', primary:false},
+    ]},
+  { name:'Sonoma County', tag:null,
+    cities:'Santa Rosa · Petaluma · Rohnert Park',
+    links:[
+      {label:'Tax Bill Search',  url:'https://common3.mptsweb.com/mbc/sonoma/tax/search', primary:true},
+      {label:'Assessor / Parcel Search', url:'https://common1.mptsweb.com/mbap/SONOMA/asr', primary:false},
+    ]},
+  { name:'San Francisco County', tag:null,
+    cities:'San Francisco (city and county)',
+    links:[
+      {label:'Property Tax Lookup',         url:'https://county-taxes.net/ca-sanfrancisco/property-tax', primary:true},
+      {label:'Property Tax Information',    url:'https://sftreasurer.org/property', primary:false},
+    ]},
+];
+
+function renderCountyLookup(list) {
+  const el = document.getElementById('countyGrid');
+  if (!el) return;
+  const extIcon = '<svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+  el.innerHTML = list.map(c =>
+    '<div class="county-card">'
+    +'<div class="county-hdr"><div class="county-name">'+c.name+'</div>'
+    +(c.tag ? '<span class="county-tag tag-primary">'+c.tag+'</span>' : '')
+    +'</div>'
+    +'<div class="county-cities">'+c.cities+'</div>'
+    +'<div class="county-links">'
+    +c.links.map(l =>
+      '<a href="'+l.url+'" target="_blank" rel="noopener" class="county-link'+(l.primary?' primary-link':'')+'">'+extIcon+l.label+'</a>'
+    ).join('')
+    +'</div></div>'
+  ).join('');
+  document.getElementById('countyCount').textContent = list.length + ' counti' + (list.length === 1 ? 'y' : 'es');
+}
+
+function filterCounties() {
+  const q = (document.getElementById('countySearch').value || '').toLowerCase();
+  renderCountyLookup(q ? COUNTIES.filter(c =>
+    c.name.toLowerCase().includes(q) || c.cities.toLowerCase().includes(q)) : COUNTIES);
+}
+
+// ── THEME TOGGLE ───────────────────────────────────
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  try { localStorage.setItem('taxace_theme', next); } catch(e){}
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  const ico = document.getElementById('themeIcon');
+  if (!ico) return;
+  const isDark = (theme || document.documentElement.getAttribute('data-theme')) === 'dark';
+  // In dark mode show sun (click to go light); in light show moon (click to go dark)
+  ico.innerHTML = isDark
+    ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>'
+    : '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+}
+
+// ── HELPERS ──────────────────────────────────────────
+function today() {
+  const d = new Date();
+  return String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+'-'+d.getFullYear();
+}
+
+// Formats ANY date string → MM-DD-YYYY.
+// Handles: raw JS Date.toString() with timezone text, "Oct 21, 2026", "Dec. 10, 2025", ISO strings, etc.
+function fmtDate(d) {
+  if (!d || d === '—' || d === 'TBD' || d === '') return d || '—';
+  const s = String(d)
+    .replace(/\(.*?\)/g, '')        // strip "(Standard na Oras sa Pilipinas)" etc.
+    .replace(/GMT[+-]\d{4}/,'')     // strip GMT+0800
+    .replace(/([A-Za-z]{3})\./g,'$1') // "Dec." → "Dec"
+    .trim();
+  const parsed = new Date(s);
+  if (isNaN(parsed.getTime())) return String(d); // fallback: show as-is
+  return String(parsed.getMonth()+1).padStart(2,'0')+'-'
+       + String(parsed.getDate()).padStart(2,'0')+'-'
+       + parsed.getFullYear();
+}
+
+function getClient(id)  { return clientData.find(c => c.id === id); }
+function fmtAmt(n)      { return '$' + Number(n).toLocaleString(); }
+function statusBadge(s) {
+  const m = {Escalated:'badge-escalated','2nd Notice':'badge-2nd',
+    'Reminder Sent':'badge-reminder','Reminder Set':'badge-reminder',
+    'New Flag':'badge-new',Resolved:'badge-resolved'};
+  return '<span class="badge '+(m[s]||'')+'">'+(s||'—')+'</span>';
+}
+function rowCls(s) {
+  return ({Escalated:'row-escalated','2nd Notice':'row-2nd',
+    'Reminder Sent':'row-reminder','Reminder Set':'row-reminder',
+    'New Flag':'row-new'})[s]||'';
+}
+
+// ── UPDATE ALL ────────────────────────────────────────
+function updateAll() {
+  const total     = clientData.length;
+  const escalated = clientData.filter(c=>c.status==='Escalated').length;
+  const amount    = clientData.reduce((s,c)=>s+Number(c.amount||0),0);
+  const newFlags  = clientData.filter(c=>c.status==='New Flag').length;
+
+  document.getElementById('stat-total').textContent     = total;
+  document.getElementById('stat-escalated').textContent = escalated;
+  document.getElementById('stat-amount').textContent    = fmtAmt(amount);
+  document.getElementById('stat-new').textContent       = newFlags;
+  document.getElementById('navBadge').textContent       = total;
+
+  document.getElementById('statusBreakdown').innerHTML = [
+    {label:'Escalated',               color:'#C0392B',count:escalated},
+    {label:'2nd Notice Sent',         color:'#B8860B',count:clientData.filter(c=>c.status==='2nd Notice').length},
+    {label:'Reminder Sent',           color:'#2471A3',count:clientData.filter(c=>c.status==='Reminder Sent'||c.status==='Reminder Set').length},
+    {label:'New Flag — Not Contacted',color:'#E07B10',count:newFlags},
+    {label:'Resolved (removed)',      color:'#1A7A58',count:0},
+  ].map(b=>'<div class="status-row"><span class="status-dot" style="background:'+b.color+'"></span>'
+    +'<span class="status-row-label">'+b.label+'</span>'
+    +'<span class="status-row-count">'+b.count+'</span></div>').join('');
+
+  if (!total) {
+    document.getElementById('quickActions').innerHTML =
+      '<div class="no-actions">All clear — no clients flagged.</div>';
+  } else {
+    const rank={Escalated:0,'New Flag':1,'2nd Notice':2,'Reminder Sent':3,'Reminder Set':3};
+    const dotC={Escalated:'#C0392B','New Flag':'#E07B10','2nd Notice':'#B8860B'};
+    const actL={Escalated:'Follow Up','New Flag':'Remind','2nd Notice':'2nd Notice','Reminder Sent':'Re-check','Reminder Set':'Re-check'};
+    const actC={Escalated:'btn-danger','New Flag':'btn-remind','2nd Notice':'btn-outline','Reminder Sent':'btn-ghost','Reminder Set':'btn-ghost'};
+    const top4=[...clientData].sort((a,b)=>(rank[a.status]||9)-(rank[b.status]||9)||b.days-a.days).slice(0,4);
+    document.getElementById('quickActions').innerHTML=top4.map(c=>
+      '<div class="action-item"><div class="action-dot" style="background:'+(dotC[c.status]||'#ccc')+'"></div>'
+      +'<div class="action-body"><div class="action-name">'+c.name+' &mdash; '+c.status+'</div>'
+      +'<div class="action-meta">'+(c.lastContact&&c.lastContact!=='—'?'Last contact '+fmtDate(c.lastContact)+' &middot; ':'No contact yet &middot; ')+fmtAmt(c.amount)+' &middot; '+c.days+'d overdue</div></div>'
+      +'<button class="btn '+(actC[c.status]||'btn-outline')+' btn-xs" onclick="openRemindModal(\''+c.id+'\')">'+(actL[c.status]||'Action')+'</button></div>').join('');
+  }
+  filterTable();
+  renderLog();
+}
+
+// ── TABLE ─────────────────────────────────────────────
+function renderTable(data) {
+  const empty=document.getElementById('emptyState');
+  const wrap=document.getElementById('tableWrap');
+  empty.style.display = (!data.length && !clientData.length) ? 'block' : 'none';
+  wrap.style.display  = (!data.length && !clientData.length) ? 'none'  : '';
+
+  document.getElementById('tableBody').innerHTML = data.map(c=>{
+    const hn = notesMap[c.id] && notesMap[c.id].trim();
+    return '<tr class="'+rowCls(c.status)+'" id="row-'+c.id+'">'
+      +'<td><div class="client-name">'+c.name+(hn?'<span class="notes-dot" title="Has notes"></span>':'')+'</div>'
+      +'<div class="client-id">'+(c.id||'—')+'</div></td>'
+      +'<td class="prop-addr">'+c.property+'</td>'
+      +'<td style="font-size:12px;color:var(--text-secondary)">'+c.installment+'</td>'
+      +'<td class="amount">'+fmtAmt(c.amount)+'</td>'
+      +'<td style="font-size:12px;color:var(--text-secondary)">'+fmtDate(c.dueDate)+'</td>'
+      +'<td class="days-over'+(c.days<250?' mod':'')+'">'+c.days+'d</td>'
+      +'<td>'+statusBadge(c.status)+'</td>'
+      +'<td style="font-size:12px;color:var(--text-secondary)">'+fmtDate(c.lastContact)+'</td>'
+      +'<td class="td-actions">'
+      +'<button class="btn btn-paid btn-xs" title="Mark as paid" onclick="openPaidModal(\''+c.id+'\')">'
+      +'<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Paid</button>'
+      +'<button class="btn btn-remind btn-xs" title="Log a reminder" onclick="openRemindModal(\''+c.id+'\')">'
+      +'<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Remind</button>'
+      +'<button class="btn btn-edit btn-icon" title="Edit" onclick="openEditModal(\''+c.id+'\')">'
+      +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+      +'<button class="btn btn-notes btn-icon" title="Notes" onclick="openNotesModal(\''+c.id+'\')">'
+      +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></button>'
+      +'</td></tr>';
+  }).join('');
+  document.getElementById('rowCount').textContent=data.length+' client'+(data.length!==1?'s':'');
+}
+
+function filterTable() {
+  const q  =(document.getElementById('searchInput')?.value||'').toLowerCase();
+  const st =document.getElementById('statusFilter')?.value||'';
+  const ins=document.getElementById('installFilter')?.value||'';
+  renderTable(clientData.filter(c=>
+    (!q  ||c.name.toLowerCase().includes(q)||c.property.toLowerCase().includes(q))&&
+    (!st ||c.status===st)&&
+    (!ins||c.installment.includes(ins))
+  ));
+}
+
+// ── LOG ───────────────────────────────────────────────
+function renderLog() {
+  const el=document.getElementById('reminderLogEl'); if(!el)return;
+  const cls={'Sent':'log-sent','No Response':'log-noresponse',
+    'Delivered':'log-delivered','Payment Confirmed':'log-payment'};
+  el.innerHTML=reminderLog.length
+    ?reminderLog.map(r=>'<div class="log-entry"><div class="log-date">'+fmtDate(r.date)+'</div>'
+      +'<div class="log-body"><div class="log-client">'+r.client
+      +' <span style="font-weight:400;color:var(--text-muted);font-size:11px">'+r.cid+'</span></div>'
+      +'<div class="log-detail">'+r.type+' &middot; '+r.method+' &middot; Logged by '+r.by+'</div></div>'
+      +'<span class="log-status '+(cls[r.status]||'')+'">'+r.status+'</span></div>').join('')
+    :'<div class="log-empty">No reminders logged yet. Use the Remind button to log contact attempts — they write directly to the Google Sheet.</div>';
+}
+
+// ── MODAL CORE ────────────────────────────────────────
+let modalCtx=null;
+function openModal(title,subtitle,body,footer){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalSubtitle').textContent=subtitle||'';
+  document.getElementById('modalBody').innerHTML=body;
+  document.getElementById('modalFooter').innerHTML=footer;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');modalCtx=null;}
+function handleOverlayClick(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+
+// ── PAID ──────────────────────────────────────────────
+function openPaidModal(id){
+  const c=getClient(id);if(!c)return;modalCtx=id;
+  openModal('Confirm Payment Received',c.name+' \u00b7 '+(c.id||''),
+    '<div class="confirm-box success"><p>'
+    +'<strong>Client:</strong> '+c.name+'<br>'
+    +'<strong>Property:</strong> '+c.property+'<br>'
+    +'<strong>Installment:</strong> '+c.installment+'<br>'
+    +'<strong>Amount:</strong> <strong>'+fmtAmt(c.amount)+'</strong></p></div>'
+    +'<div class="field-group"><label class="field-label">Confirmation note (optional)</label>'
+    +'<input class="field-input" id="paidNote" placeholder="e.g. Client confirmed via county portal"></div>'
+    +'<p style="font-size:12px;color:var(--text-muted);margin-top:8px">Confirming removes this client from the sheet and logs the payment in the Reminder Log tab.</p>',
+    '<button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-success btn-sm" id="paidConfirmBtn" onclick="confirmPaid()">'
+    +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+    +' Confirm Payment</button>'
+  );
+}
+async function confirmPaid(){
+  const c=getClient(modalCtx);if(!c)return;
+  const note=document.getElementById('paidNote').value.trim();
+  document.getElementById('paidConfirmBtn').disabled=true;
+  document.getElementById('paidConfirmBtn').textContent='Saving…';
+  setSyncState('syncing');
+  try{
+    await apiCall('paid',{id:c.id,name:c.name,note,by:loggedBy()});
+    const row=document.getElementById('row-'+c.id);
+    const doRemove=()=>{
+      clientData=clientData.filter(x=>x.id!==c.id);
+      logActivity('PAID',c.name+' — '+fmtAmt(c.amount)+' marked as paid and removed',c.id);
+      closeModal();updateAll();markSynced();
+      showToast('Payment recorded for '+c.name+' — removed from sheet.','success');
+      refreshData();
+    };
+    if(row){row.classList.add('removing');setTimeout(doRemove,300);}else doRemove();
+  }catch(err){
+    document.getElementById('paidConfirmBtn').disabled=false;
+    document.getElementById('paidConfirmBtn').textContent='Confirm Payment';
+    showToast('Error: '+err.message,'warn');setSyncState('error');
+  }
+}
+
+// ── REMIND ────────────────────────────────────────────
+function openRemindModal(id){
+  const c=getClient(id);if(!c)return;modalCtx=id;
+  const tOpts=['1st Reminder','2nd Notice','Escalation','Follow-Up Call'].map(t=>'<option>'+t+'</option>').join('');
+  const mOpts=['Email','Phone Call','Email + Call','Certified Mail','Text Message'].map(m=>'<option>'+m+'</option>').join('');
+  const draft='Dear '+c.name+',\n\nWe are reaching out regarding your property tax installment for '+c.property+'. Our records show the '+c.installment+' installment \u2014 '+fmtAmt(c.amount)+' \u2014 became delinquent on '+c.dueDate+' ('+c.days+' days ago).\n\nUnpaid property taxes accrue penalties and interest over time. Please contact your county tax collector as soon as possible to arrange payment.\n\nIf you have already submitted payment, please let us know so we can update our records. We are happy to help if you have any questions.\n\nWarm regards,\nTaxAce Business Solutions';
+  openModal('Log Reminder Sent',c.name+' \u00b7 '+fmtAmt(c.amount)+' overdue',
+    '<div class="field-row" style="margin-bottom:13px">'
+    +'<div class="field-group"><label class="field-label">Reminder Type</label><select class="field-select" id="remType">'+tOpts+'</select></div>'
+    +'<div class="field-group"><label class="field-label">Method</label><select class="field-select" id="remMethod">'+mOpts+'</select></div></div>'
+    +'<label class="field-label">Draft message \u2014 review before sending</label>'
+    +'<div class="remind-preview">'+draft+'</div>',
+    '<button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-remind btn-sm" id="remConfirmBtn" onclick="logReminder()">'
+    +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'
+    +' Log Reminder Sent</button>'
+  );
+}
+async function logReminder(){
+  const c=getClient(modalCtx);if(!c)return;
+  const type=document.getElementById('remType').value;
+  const method=document.getElementById('remMethod').value;
+  const newStatus={'1st Reminder':'Reminder Sent','2nd Notice':'2nd Notice',
+    'Escalation':'Escalated','Follow-Up Call':c.status}[type]||c.status;
+  document.getElementById('remConfirmBtn').disabled=true;
+  document.getElementById('remConfirmBtn').textContent='Saving…';
+  setSyncState('syncing');
+  try{
+    await apiCall('remind',{id:c.id,name:c.name,type,method,newStatus,by:loggedBy()});
+    c.status=newStatus;c.lastContact=today();
+    reminderLog.unshift({date:today(),cid:c.id,client:c.name,type,method,by:loggedBy(),status:'Sent'});
+    closeModal();updateAll();markSynced();
+    logActivity('REMIND',c.name+' — '+type+' via '+method,c.id);
+    showToast('Reminder logged for '+c.name+' — sheet updated.','info');
+  }catch(err){
+    document.getElementById('remConfirmBtn').disabled=false;
+    document.getElementById('remConfirmBtn').textContent='Log Reminder Sent';
+    showToast('Error: '+err.message,'warn');setSyncState('error');
+  }
+}
+
+// ── NOTES ─────────────────────────────────────────────
+function openNotesModal(id){
+  const c=getClient(id);if(!c)return;modalCtx=id;
+  openModal('Client Notes',c.name+' \u00b7 '+(c.id||''),
+    '<div class="field-group"><label class="field-label">Notes \u2014 saved to Google Sheet (visible to all staff)</label>'
+    +'<textarea class="field-textarea" id="notesInput" style="min-height:120px" '
+    +'placeholder="Call attempts, payment arrangements, special circumstances\u2026">'+(notesMap[id]||c.notes||'')+'</textarea></div>',
+    '<button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-primary btn-sm" id="notesConfirmBtn" onclick="saveNotes()">'
+    +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>'
+    +' Save to Sheet</button>'
+  );
+}
+async function saveNotes(){
+  if(!modalCtx)return;
+  const notes=document.getElementById('notesInput').value.trim();
+  document.getElementById('notesConfirmBtn').disabled=true;
+  document.getElementById('notesConfirmBtn').textContent='Saving…';
+  setSyncState('syncing');
+  try{
+    await apiCall('notes',{id:modalCtx,notes});
+    notesMap[modalCtx]=notes;
+    const c=getClient(modalCtx);if(c)c.notes=notes;
+    closeModal();filterTable();markSynced();
+    const nc=getClient(modalCtx);if(nc)logActivity('NOTES','Notes updated for '+nc.name,modalCtx);
+    showToast('Notes saved to sheet.','success');
+  }catch(err){
+    document.getElementById('notesConfirmBtn').disabled=false;
+    document.getElementById('notesConfirmBtn').textContent='Save to Sheet';
+    showToast('Error: '+err.message,'warn');setSyncState('error');
+  }
+}
+
+// ── EDIT ──────────────────────────────────────────────
+function openEditModal(id){
+  const c=getClient(id);if(!c)return;modalCtx=id;
+  const sOpts=['New Flag','Reminder Sent','2nd Notice','Escalated']
+    .map(s=>'<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+s+'</option>').join('');
+  const iOpts=['2025-26 1st','2025-26 2nd','2026-27 1st','2026-27 2nd']
+    .map(i=>'<option value="'+i+'"'+(c.installment===i?' selected':'')+'>'+i+'</option>').join('');
+  openModal('Edit Client',c.id||'',
+    '<div class="field-group"><label class="field-label">Client Name *</label><input class="field-input" id="eName" value="'+c.name+'"></div>'
+    +'<div class="field-group"><label class="field-label">Property Address *</label><input class="field-input" id="eProp" value="'+c.property+'"></div>'
+    +'<div class="field-row"><div class="field-group"><label class="field-label">Installment</label><select class="field-select" id="eInstall">'+iOpts+'</select></div>'
+    +'<div class="field-group"><label class="field-label">Amount Due ($)</label><input class="field-input" id="eAmount" type="number" value="'+c.amount+'"></div></div>'
+    +'<div class="field-row"><div class="field-group"><label class="field-label">Delinquent Since</label><input class="field-input" id="eDue" value="'+c.dueDate+'"></div>'
+    +'<div class="field-group"><label class="field-label">Days Overdue</label><input class="field-input" id="eDays" type="number" value="'+c.days+'"></div></div>'
+    +'<div class="field-row"><div class="field-group"><label class="field-label">Status</label><select class="field-select" id="eStatus">'+sOpts+'</select></div>'
+    +'<div class="field-group"><label class="field-label">Last Contact</label><input class="field-input" id="eLast" value="'+(c.lastContact||'—')+'"></div></div>',
+    '<button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-primary btn-sm" id="editConfirmBtn" onclick="saveEdit()">Save to Sheet</button>'
+  );
+}
+async function saveEdit(){
+  const c=getClient(modalCtx);if(!c)return;
+  const name=document.getElementById('eName').value.trim();
+  const prop=document.getElementById('eProp').value.trim();
+  if(!name||!prop){showToast('Name and property address are required.','warn');return;}
+  document.getElementById('editConfirmBtn').disabled=true;
+  document.getElementById('editConfirmBtn').textContent='Saving…';
+  setSyncState('syncing');
+  const updated={
+    id:c.id,name,property:prop,
+    installment:document.getElementById('eInstall').value,
+    amount:parseInt(document.getElementById('eAmount').value)||c.amount,
+    dueDate:document.getElementById('eDue').value.trim()||c.dueDate,
+    days:parseInt(document.getElementById('eDays').value)||c.days,
+    status:document.getElementById('eStatus').value,
+    lastContact:document.getElementById('eLast').value.trim()||'—',
+  };
+  try{
+    await apiCall('update',updated);
+    Object.assign(c,updated);
+    closeModal();updateAll();markSynced();
+    logActivity('EDIT',c.name+' record updated',c.id);
+    showToast('Changes saved to sheet for '+c.name+'.','success');
+  }catch(err){
+    document.getElementById('editConfirmBtn').disabled=false;
+    document.getElementById('editConfirmBtn').textContent='Save to Sheet';
+    showToast('Error: '+err.message,'warn');setSyncState('error');
+  }
+}
+
+// ── ADD CLIENT ────────────────────────────────────────
+function openAddModal(){
+  modalCtx=null;
+  const sOpts=['New Flag','Reminder Sent','2nd Notice','Escalated'].map(s=>'<option>'+s+'</option>').join('');
+  const iOpts=['2025-26 1st','2025-26 2nd','2026-27 1st','2026-27 2nd'].map(i=>'<option>'+i+'</option>').join('');
+  openModal('Add New Client','New row will be added to Google Sheet',
+    '<div class="field-group"><label class="field-label">Client Name *</label><input class="field-input" id="aName" placeholder="Full name"></div>'
+    +'<div class="field-group"><label class="field-label">Property Address *</label><input class="field-input" id="aProp" placeholder="123 Main St, Fairfield"></div>'
+    +'<div class="field-row"><div class="field-group"><label class="field-label">Installment</label><select class="field-select" id="aInstall">'+iOpts+'</select></div>'
+    +'<div class="field-group"><label class="field-label">Amount Due ($) *</label><input class="field-input" id="aAmount" type="number" placeholder="0"></div></div>'
+    +'<div class="field-row"><div class="field-group"><label class="field-label">Delinquent Since</label><input class="field-input" id="aDue" placeholder="e.g. Apr 10, 2026"></div>'
+    +'<div class="field-group"><label class="field-label">Days Overdue</label><input class="field-input" id="aDays" type="number" placeholder="0"></div></div>'
+    +'<div class="field-group"><label class="field-label">Initial Status</label><select class="field-select" id="aStatus">'+sOpts+'</select></div>',
+    '<button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-primary btn-sm" id="addConfirmBtn" onclick="saveNewClient()">'
+    +'<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    +' Add to Sheet</button>'
+  );
+}
+async function saveNewClient(){
+  const name=document.getElementById('aName').value.trim();
+  const prop=document.getElementById('aProp').value.trim();
+  const amount=parseInt(document.getElementById('aAmount').value)||0;
+  if(!name||!prop||!amount){showToast('Name, property, and amount are required.','warn');return;}
+  document.getElementById('addConfirmBtn').disabled=true;
+  document.getElementById('addConfirmBtn').textContent='Adding…';
+  setSyncState('syncing');
+  const newClient={
+    name,property:prop,
+    installment:document.getElementById('aInstall').value,
+    amount,
+    dueDate:document.getElementById('aDue').value.trim()||'TBD',
+    days:parseInt(document.getElementById('aDays').value)||0,
+    status:document.getElementById('aStatus').value,
+  };
+  try{
+    const res=await apiCall('add',newClient);
+    newClient.id=res.id||'';newClient.lastContact='—';newClient.notes='';
+    clientData.push(newClient);
+    closeModal();updateAll();markSynced();
+    logActivity('ADD',name+' added — ID '+c.id,c.id);
+    showToast(name+' added to the sheet.','success');
+  }catch(err){
+    document.getElementById('addConfirmBtn').disabled=false;
+    document.getElementById('addConfirmBtn').textContent='Add to Sheet';
+    showToast('Error: '+err.message,'warn');setSyncState('error');
+  }
+}
+
+// ── BATCH REMIND ──────────────────────────────────────
+let _batchRunning = false;
+async function batchRemind(){
+  if(_batchRunning){showToast('Already sending — please wait.','warn');return;}
+  const nf=clientData.filter(c=>c.status==='New Flag');
+  if(!nf.length){showToast('No new flags to remind right now.');return;}
+  _batchRunning=true;
+  const btns=document.querySelectorAll('[onclick="batchRemind()"]');
+  btns.forEach(b=>{b.disabled=true;b.textContent='Sending…';});
+  setSyncState('syncing');
+  try{
+    for(const c of nf){
+      await apiCall('remind',{id:c.id,name:c.name,type:'1st Reminder',
+        method:'Email',newStatus:'Reminder Sent',by:loggedBy()});
+      c.status='Reminder Sent';c.lastContact=today();
+      reminderLog.unshift({date:today(),cid:c.id,client:c.name,type:'1st Reminder',
+        method:'Email',by:loggedBy(),status:'Sent'});
+    }
+    updateAll();markSynced();
+    logActivity('BATCH','Batch: 1st Reminder sent to '+nf.length+' client'+(nf.length>1?'s':''));
+    showToast('1st reminders logged for '+nf.length+' client'+(nf.length>1?'s':'')+' — sheet updated.','success');
+  }catch(err){showToast('Error: '+err.message,'warn');setSyncState('error');}
+  finally{
+    _batchRunning=false;
+    btns.forEach(b=>{b.disabled=false;b.textContent='Send Reminders';});
+  }
+}
+
+// ── EXPORT CSV ────────────────────────────────────────
+function exportCSV(){
+  if(!clientData.length){showToast('No clients to export.');return;}
+  const h='Client ID,Name,Property,Installment,Amount,Delinquent Since,Days,Status,Last Contact\n';
+  const r=clientData.map(c=>[c.id,'"'+c.name+'"','"'+c.property+'"',c.installment,c.amount,c.dueDate,c.days,c.status,c.lastContact||'—'].join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([h+r],{type:'text/csv'}));
+  a.download='taxace-ptd-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  logActivity('EXPORT','Flagged client list exported as CSV ('+clientData.length+' clients)');
+}
+
+// ── PANEL SWITCHING ───────────────────────────────────
+function switchPanel(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  const nav=el||document.querySelector('[data-panel="'+id+'"]');
+  if(nav)nav.classList.add('active');
+  try{localStorage.setItem('taxace_ptd_tab',id);}catch(e){}
+}
+function goToAddClient(){switchPanel('flagged');setTimeout(openAddModal,60);}
+
+// ── TOAST ─────────────────────────────────────────────
+let toastT;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast show'+(type?' toast-'+type:'');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+
+// ── TOTP (RFC 6238) — Browser Web Crypto ──────────────────
+function b32decode(s) {
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  s = s.toUpperCase().replace(/=+$/, '');
+  let bits = 0, val = 0;
+  const out = [];
+  for (let i = 0; i < s.length; i++) {
+    const idx = alpha.indexOf(s[i]);
+    if (idx < 0) continue;
+    val = (val << 5) | idx; bits += 5;
+    if (bits >= 8) { out.push((val >>> (bits - 8)) & 0xff); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+
+async function calcTOTP(secret, offset) {
+  const counter = Math.floor(Date.now() / 30000) + (offset || 0);
+  const buf = new ArrayBuffer(8);
+  new DataView(buf).setUint32(4, counter, false);
+  const key = await crypto.subtle.importKey(
+    'raw', b32decode(secret), {name:'HMAC', hash:'SHA-1'}, false, ['sign']
+  );
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, buf));
+  const off = sig[19] & 0xf;
+  const code = (((sig[off]&0x7f)<<24)|((sig[off+1]&0xff)<<16)|
+                ((sig[off+2]&0xff)<<8)|(sig[off+3]&0xff)) % 1000000;
+  return String(code).padStart(6, '0');
+}
+
+async function verifyTOTP(secret, input) {
+  const code = input.trim();
+  for (const delta of [-1, 0, 1]) {
+    if (await calcTOTP(secret, delta) === code) return true;
+  }
+  return false;
+}
+
+// ── 2FA FLOW ──────────────────────────────────────────────
+let _pendingUser = null;
+let _qrInstance  = null;
+
+function show2FASetup(username, secret) {
+  showScreen('twoFASetupScreen');
+  document.getElementById('tfaSetupCode').value = '';
+  document.getElementById('tfaSetupError').textContent = '';
+  document.getElementById('tfaSetupBtn').disabled = false;
+  document.getElementById('tfaSetupBtn').textContent = 'Verify & Continue';
+
+  // Format secret as groups of 4 for readability
+  document.getElementById('manualSecretDisplay').textContent =
+    secret.match(/.{1,4}/g).join(' ');
+
+  // Generate QR code
+  const qrDiv = document.getElementById('qrcodeDiv');
+  qrDiv.innerHTML = '';
+  const otpUrl = 'otpauth://totp/TaxAce%20Dashboard:' + encodeURIComponent(username)
+    + '?secret=' + secret + '&issuer=TaxAce&algorithm=SHA1&digits=6&period=30';
+  try {
+    _qrInstance = new QRCode(qrDiv, {
+      text: otpUrl, width: 180, height: 180,
+      colorDark: '#162C4A', colorLight: '#FFFFFF',
+    });
+  } catch(e) {
+    qrDiv.textContent = 'QR library loading — use the manual key above.';
+  }
+
+  setTimeout(() => document.getElementById('tfaSetupCode').focus(), 300);
+}
+
+function show2FAVerify() {
+  showScreen('twoFAVerifyScreen');
+  document.getElementById('tfaVerifyCode').value = '';
+  document.getElementById('tfaVerifyError').textContent = '';
+  document.getElementById('tfaVerifyBtn').disabled = false;
+  document.getElementById('tfaVerifyBtn').textContent = 'Verify';
+  setTimeout(() => document.getElementById('tfaVerifyCode').focus(), 300);
+}
+
+async function confirmTFASetup() {
+  const code = document.getElementById('tfaSetupCode').value.trim();
+  const errEl = document.getElementById('tfaSetupError');
+  const btn   = document.getElementById('tfaSetupBtn');
+  errEl.textContent = '';
+  if (code.length !== 6) { errEl.textContent = 'Enter the full 6-digit code from your app.'; return; }
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  const user = USERS[_pendingUser];
+  const valid = await verifyTOTP(user.secret, code);
+  if (valid) {
+    try { localStorage.setItem('taxace_2fa_' + _pendingUser, 'done'); } catch(e){}
+    proceedToApp();
+  } else {
+    errEl.textContent = 'Code not valid. Make sure your app time is correct and try again.';
+    btn.disabled = false; btn.textContent = 'Verify & Continue';
+    document.getElementById('tfaSetupCode').value = '';
+    document.getElementById('tfaSetupCode').focus();
+  }
+}
+
+async function confirmTFAVerify() {
+  const code = document.getElementById('tfaVerifyCode').value.trim();
+  const errEl = document.getElementById('tfaVerifyError');
+  const btn   = document.getElementById('tfaVerifyBtn');
+  errEl.textContent = '';
+  if (code.length !== 6) { errEl.textContent = 'Enter the 6-digit code from your authenticator app.'; return; }
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  const user = USERS[_pendingUser];
+  const valid = await verifyTOTP(user.secret, code);
+  if (valid) {
+    proceedToApp();
+  } else {
+    errEl.textContent = 'Code not valid. Codes refresh every 30 seconds — try again.';
+    btn.disabled = false; btn.textContent = 'Verify';
+    document.getElementById('tfaVerifyCode').value = '';
+    document.getElementById('tfaVerifyCode').focus();
+  }
+}
+
+function resetTFA(e) {
+  if (e) e.preventDefault();
+  if (!_pendingUser) return;
+  try { localStorage.removeItem('taxace_2fa_' + _pendingUser); } catch(e2){}
+  const user = USERS[_pendingUser];
+  show2FASetup(_pendingUser, user.secret);
+}
+
+function proceedToApp() {
+  _loggedInUser = _pendingUser;
+  try { sessionStorage.setItem(AUTH_KEY,'ok'); sessionStorage.setItem('taxace_user',_pendingUser); } catch(e){}
+  showScreen('loadingScreen');
+  loadStaffName();
+  const inp = document.getElementById('staffNameInput');
+  if (inp && staffName) inp.value = staffName;
+  loadData();
+}
+
+// ── AUTH ──────────────────────────────────────────────
+// USERS — password + TOTP secret (generated per user, do not share publicly)
+const USERS = {
+  'Property1': { pw:'prop1234!', secret:'ARVSBVHQXYVG6XHC', name:'Property1' },
+  'Nataly':    { pw:'Test1234!', secret:'ECT5LOS3JZNREASK',    name:'Nataly'    },
+  'Ivy':       { pw:'Test1234!', secret:'X6FRYV7FC3WXR3UZ',       name:'Ivy'       },
+};
+const AUTH_KEY = 'taxace_ptd_auth';
+let _loggedInUser = '';
+
+function checkAuth() {
+  return !!(sessionStorage.getItem(AUTH_KEY) === 'ok' && sessionStorage.getItem('taxace_user'));
+}
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!u || !p) { errEl.textContent = 'Please enter both username and password.'; return; }
+  const user = USERS[u];
+  if (user && user.pw === p) {
+    _pendingUser = u;
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    // Check if 2FA already set up on this device
+    let tfaDone = false;
+    try { tfaDone = localStorage.getItem('taxace_2fa_' + u) === 'done'; } catch(e2){}
+    if (tfaDone) {
+      show2FAVerify();
+    } else {
+      show2FASetup(u, user.secret);
+    }
+    btn.disabled = false;
+    btn.textContent = 'Log In';
+  } else {
+    errEl.textContent = 'Incorrect username or password. Please try again.';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem(AUTH_KEY);
+  sessionStorage.removeItem('taxace_user');
+  _loggedInUser = '';
+  _pendingUser  = null;
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'Log In';
+  showScreen('loginScreen');
+}
+
+function togglePw() {
+  const inp = document.getElementById('loginPass');
+  const ico = document.getElementById('eyeIcon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  } else {
+    inp.type = 'password';
+    ico.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────
+// Load saved theme
+try { const t=localStorage.getItem('taxace_theme'); if(t){document.documentElement.setAttribute('data-theme',t);updateThemeIcon(t);}} catch(e){}
+// Render county grid
+renderCountyLookup(COUNTIES);
+
+// On load: check if still authenticated from prior session
+const _storedUser = (() => { try { return sessionStorage.getItem('taxace_user'); } catch(e){ return null; } })();
+if (sessionStorage.getItem(AUTH_KEY) === 'ok' && _storedUser && USERS[_storedUser]) {
+  _loggedInUser = _storedUser;
+  _pendingUser  = _storedUser;
+  loadStaffName();
+  const inp = document.getElementById('staffNameInput');
+  if (inp && staffName) inp.value = staffName;
+  showScreen('loadingScreen');
+  loadData();
+}
+// Otherwise loginScreen is active by default
+</script>
+</body>
+</html>
